@@ -27,6 +27,7 @@ export async function registerUser(username: string, password: string): Promise<
       passwordHash,
       createdAt: new Date().toISOString(),
       watchlist: [],
+      score: 0,
     };
 
     await userStore.createUser(user);

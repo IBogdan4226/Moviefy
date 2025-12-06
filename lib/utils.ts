@@ -87,3 +87,15 @@ export function getUniqueMovies<T extends {Title:string}>(movies: T[]) {
   
   return Array.from(seen.values());
 }
+
+export function calculateMoviePoints(movie: MovieData): number {
+  let points = 0;
+  const year = parseInt(movie.year);
+  if (!isNaN(year) && year > 2024) {
+    points += 100;
+  }
+  if (!isNaN(movie.rating) && movie.rating >= 9) {
+    points += 200;
+  }
+  return Math.max(points, 50);
+}

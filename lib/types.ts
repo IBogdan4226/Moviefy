@@ -101,4 +101,5 @@ export interface User {
   passwordHash: string;
   createdAt: string;
   watchlist: string[];
+  score: number;
 }

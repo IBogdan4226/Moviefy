@@ -9,7 +9,11 @@ import {
   BatchPagesResult,
   SearchFilters,
 } from "./types";
-import { createFilterChain, getUniqueMovies } from "./utils";
+import {
+  createFilterChain,
+  getUniqueMovies,
+  calculateMoviePoints,
+} from "./utils";
 import { redisCache } from "./redisCache";
 import { userStore } from "./redisUser";
 import { getServerSession } from "next-auth";
@@ -235,27 +239,38 @@ export async function fetchBatchPages(
   }
 }
 
-export async function toggleWatchlist(imdbID: string): Promise<{ success: boolean; isInWatchlist: boolean; error?: string }> {
+export async function toggleWatchlist(
+  imdbID: string
+): Promise<{ success: boolean; isInWatchlist: boolean; error?: string }> {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
-      return { success: false, isInWatchlist: false, error: "Not authenticated" };
+      return {
+        success: false,
+        isInWatchlist: false,
+        error: "Not authenticated",
+      };
     }
 
     const user = await userStore.getUserById(session.user.id);
-    
+
     if (!user) {
       return { success: false, isInWatchlist: false, error: "User not found" };
     }
 
     const watchlist = user.watchlist || [];
     const isInWatchlist = watchlist.includes(imdbID);
+    const movieDetails = await fetchMovieDetails(imdbID);
+
+    const points = movieDetails ? calculateMoviePoints(movieDetails) : 50;
 
     if (isInWatchlist) {
-      user.watchlist = watchlist.filter(id => id !== imdbID);
+      user.watchlist = watchlist.filter((id) => id !== imdbID);
+      user.score = Math.max((user.score || 0) - points, 0);
     } else {
       user.watchlist = [...watchlist, imdbID];
+      user.score = (user.score || 0) + points;
     }
 
     await userStore.updateUser(user);
@@ -263,20 +278,26 @@ export async function toggleWatchlist(imdbID: string): Promise<{ success: boolea
     return { success: true, isInWatchlist: !isInWatchlist };
   } catch (error) {
     console.error("Error toggling watchlist:", error);
-    return { success: false, isInWatchlist: false, error: "Failed to update watchlist" };
+    return {
+      success: false,
+      isInWatchlist: false,
+      error: "Failed to update watchlist",
+    };
   }
 }
 
-export async function getWatchlistStatus(imdbID: string): Promise<{ isInWatchlist: boolean }> {
+export async function getWatchlistStatus(
+  imdbID: string
+): Promise<{ isInWatchlist: boolean }> {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return { isInWatchlist: false };
     }
 
     const user = await userStore.getUserById(session.user.id);
-    
+
     if (!user) {
       return { isInWatchlist: false };
     }
@@ -289,33 +310,70 @@ export async function getWatchlistStatus(imdbID: string): Promise<{ isInWatchlis
   }
 }
 
-export async function getWatchlistMovies(): Promise<{ success: boolean; data?: MovieData[]; error?: string }> {
+export async function getWatchlistMovies(): Promise<{
+  success: boolean;
+  data?: MovieData[];
+  error?: string;
+}> {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return { success: false, error: "Not authenticated" };
     }
 
     const user = await userStore.getUserById(session.user.id);
-    
+
     if (!user) {
       return { success: false, error: "User not found" };
     }
 
     const watchlist = user.watchlist || [];
-    
+
     if (watchlist.length === 0) {
       return { success: true, data: [] };
     }
 
-    const moviePromises = watchlist.map(imdbID => fetchMovieDetails(imdbID));
+    const moviePromises = watchlist.map((imdbID) => fetchMovieDetails(imdbID));
     const movies = await Promise.all(moviePromises);
-    const validMovies = movies.filter((movie): movie is MovieData => movie !== null);
+    const validMovies = movies.filter(
+      (movie): movie is MovieData => movie !== null
+    );
 
     return { success: true, data: validMovies };
   } catch (error) {
     console.error("Error getting watchlist movies:", error);
     return { success: false, error: "Failed to fetch watchlist movies" };
+  }
+}
+
+export async function getCurrentUser(): Promise<{
+  success: boolean;
+  user?: { username: string; score: number };
+  error?: string;
+}> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const user = await userStore.getUserById(session.user.id);
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    return {
+      success: true,
+      user: {
+        username: user.username,
+        score: user.score || 0,
+      },
+    };
+  } catch (error) {
+    console.error("Error getting current user:", error);
+    return { success: false, error: "Failed to fetch user" };
   }
 }

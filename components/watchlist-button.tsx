@@ -11,8 +11,10 @@ interface WatchlistButtonProps {
   onToggle?: (isInWatchlist: boolean, imdbID: string) => void;
 }
 
+let initialIsInWatchlistCache: { [key: string]: boolean } = {};
+
 export function WatchlistButton({ imdbID, onToggle }: WatchlistButtonProps) {
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(initialIsInWatchlistCache[imdbID] ?? false);
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
 
@@ -21,6 +23,7 @@ export function WatchlistButton({ imdbID, onToggle }: WatchlistButtonProps) {
       if (session?.user) {
         const status = await getWatchlistStatus(imdbID);
         setIsInWatchlist(status.isInWatchlist);
+        initialIsInWatchlistCache[imdbID] = status.isInWatchlist;
       }
     };
     checkWatchlistStatus();
@@ -37,6 +40,8 @@ export function WatchlistButton({ imdbID, onToggle }: WatchlistButtonProps) {
       if (result.success) {
         setIsInWatchlist(result.isInWatchlist);
         onToggle?.(result.isInWatchlist, imdbID);
+        window.dispatchEvent(new CustomEvent("watchlistChanged"));
+        initialIsInWatchlistCache[imdbID] = result.isInWatchlist;
       }
     } catch (error) {
       console.error("Failed to toggle watchlist:", error);
