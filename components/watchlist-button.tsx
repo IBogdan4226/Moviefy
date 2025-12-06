@@ -8,9 +8,10 @@ import { toggleWatchlist, getWatchlistStatus } from "@/lib/actions";
 
 interface WatchlistButtonProps {
   imdbID: string;
+  onToggle?: (isInWatchlist: boolean, imdbID: string) => void;
 }
 
-export function WatchlistButton({ imdbID }: WatchlistButtonProps) {
+export function WatchlistButton({ imdbID, onToggle }: WatchlistButtonProps) {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
@@ -35,6 +36,7 @@ export function WatchlistButton({ imdbID }: WatchlistButtonProps) {
       const result = await toggleWatchlist(imdbID);
       if (result.success) {
         setIsInWatchlist(result.isInWatchlist);
+        onToggle?.(result.isInWatchlist, imdbID);
       }
     } catch (error) {
       console.error("Failed to toggle watchlist:", error);

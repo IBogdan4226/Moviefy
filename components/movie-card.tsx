@@ -24,9 +24,10 @@ import { WatchlistButton } from "@/components/watchlist-button";
 
 interface MovieCardProps {
   movie: MovieData;
+  onToggle?: (isInWatchlist: boolean, imdbID: string) => void;
 }
 
-export function MovieCard({ movie }: MovieCardProps) {
+export function MovieCard({ movie, onToggle }: MovieCardProps) {
   const rating = movie.rating;
   const ratingPercentage = (rating / 10) * 100;
   const [imageError, setImageError] = React.useState(false);
@@ -124,7 +125,7 @@ export function MovieCard({ movie }: MovieCardProps) {
                   </Badge>
                 )}
                 <div className="flex gap-1">
-                  <WatchlistButton imdbID={movie.imdbID} />
+                  <WatchlistButton imdbID={movie.imdbID} onToggle={onToggle} />
                   <Button
                     variant="ghost"
                     size="icon"

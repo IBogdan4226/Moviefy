@@ -288,3 +288,34 @@ export async function getWatchlistStatus(imdbID: string): Promise<{ isInWatchlis
     return { isInWatchlist: false };
   }
 }
+
+export async function getWatchlistMovies(): Promise<{ success: boolean; data?: MovieData[]; error?: string }> {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const user = await userStore.getUserById(session.user.id);
+    
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    const watchlist = user.watchlist || [];
+    
+    if (watchlist.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const moviePromises = watchlist.map(imdbID => fetchMovieDetails(imdbID));
+    const movies = await Promise.all(moviePromises);
+    const validMovies = movies.filter((movie): movie is MovieData => movie !== null);
+
+    return { success: true, data: validMovies };
+  } catch (error) {
+    console.error("Error getting watchlist movies:", error);
+    return { success: false, error: "Failed to fetch watchlist movies" };
+  }
+}
