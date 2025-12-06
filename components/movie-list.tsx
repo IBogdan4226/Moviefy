@@ -1,9 +1,11 @@
 "use client"
 
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieData } from '@/lib/types';
 import { MovieCard } from '@/components/movie-card';
+import { Button } from '@/components/ui/button';
 
 interface MovieListProps {
   displayedMovies: MovieData[];
@@ -22,36 +24,84 @@ export function MovieList({
   totalResults,
   totalPages
 }: MovieListProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: false,
+    align: 'center',
+    skipSnaps: false,
+    containScroll: 'trimSnaps',
+  });
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) {
+      emblaApi.scrollNext();
+      // Load more when approaching the end
+      if (hasMore && emblaApi.selectedScrollSnap() >= displayedMovies.length - 3) {
+        onLoadMore();
+      }
+    }
+  }, [emblaApi, hasMore, onLoadMore, displayedMovies.length]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
   if (displayedMovies.length === 0) {
     return null;
   }
 
   return (
-    <InfiniteScroll
-      dataLength={displayedMovies.length}
-      next={onLoadMore}
-      hasMore={hasMore}
-      loader={
-        <div className="flex justify-center py-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading more movies...</span>
-          </div>
-        </div>
-      }
-      endMessage={
-        <p className="text-center py-8 text-muted-foreground">
-          {totalMovies < totalResults
-            ? `Showing ${displayedMovies.length} movies (limited to ${totalPages} pages)`
-            : `All ${displayedMovies.length} results loaded`}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {selectedIndex + 1} out of {displayedMovies.length} movies
+          {totalMovies < totalResults && ` (limited to ${totalPages} pages)`}
         </p>
-      }
-    >
-      <div className="flex flex-col gap-6">
-        {displayedMovies.map((movie) => (
-          <MovieCard key={movie.imdbID} movie={movie} />
-        ))}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={scrollPrev}
+            disabled={!canScrollPrev}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={scrollNext}
+            disabled={!canScrollNext && !hasMore}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    </InfiniteScroll>
+
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex">
+          {displayedMovies.map((movie) => (
+            <div key={movie.imdbID} className="flex-[0_0_85%] min-w-0 px-4">
+              <MovieCard movie={movie} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

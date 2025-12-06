@@ -74,3 +74,16 @@ export function createFilterChain(filters?: SearchFilters): FilterFunction {
     createSortFilter(filters.sort)
   );
 }
+
+export function getUniqueMovies<T extends {Title:string}>(movies: T[]) {
+  const seen = new Map<string, T>();
+  
+  movies.forEach((movie) => {
+    const key = movie.Title.toLowerCase();
+    if (!seen.has(key)) {
+      seen.set(key, movie);
+    }
+  });
+  
+  return Array.from(seen.values());
+}

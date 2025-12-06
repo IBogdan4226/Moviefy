@@ -9,7 +9,7 @@ import {
   BatchPagesResult,
   SearchFilters,
 } from "./types";
-import { createFilterChain } from "./utils";
+import { createFilterChain, getUniqueMovies } from "./utils";
 import { searchCache } from "./redis";
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
@@ -60,7 +60,10 @@ async function fetchSearchPage(
       movieName
     )}&page=${page}${year ? `&y=${year}` : ""}`;
     const response = await axios.get<OMDbSearchResponse>(url);
-    return response.data;
+    return {
+      ...response.data,
+      Search: getUniqueMovies(response.data.Search || []),
+    };
   } catch (error) {
     console.error(`Failed to fetch page ${page}:`, error);
     return null;
@@ -180,8 +183,15 @@ export async function fetchBatchPages(
       fetchSearchPage(movieName, pageNum, filters?.year)
     );
     const pagesData = await Promise.all(pagesDataPromises);
+    const uniqueMoviesPagesData = pagesData.map((pageData) => {
+      if (!pageData) return pageData;
+      return {
+        ...pageData,
+        Search: getUniqueMovies(pageData.Search || []),
+      };
+    });
     const allMovieIds: { imdbID: string }[] = [];
-    pagesData.forEach((pageData) => {
+    uniqueMoviesPagesData.forEach((pageData) => {
       if (pageData && pageData.Response === "True" && pageData.Search) {
         allMovieIds.push(...pageData.Search);
       }
