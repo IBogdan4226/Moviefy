@@ -66,6 +66,8 @@ export async function searchMovie(movieName: string, page: number = 1): Promise<
           poster: details.Poster !== 'N/A' ? details.Poster : '/placeholder-movie.png',
           rating: !isNaN(rating) ? rating : 0,
           type: details.Type,
+          genre: details.Genre !== 'N/A' ? details.Genre : 'Unknown',
+          director: details.Director !== 'N/A' ? details.Director : 'Unknown',
         } as MovieData;
       } catch (error) {
         console.error(`Failed to fetch details for ${movie.imdbID}:`, error);

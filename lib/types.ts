@@ -8,6 +8,8 @@ export interface MovieData {
   poster: string;
   rating: number;
   type: string;
+  genre: string;
+  director: string;
 }
 
 export interface MovieSearchResult {

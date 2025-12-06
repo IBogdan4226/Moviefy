@@ -6,7 +6,7 @@ import { MovieData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Star, Clock, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Star, Clock, Calendar, AlertCircle, CheckCircle, XCircle, Film, User } from 'lucide-react';
 
 interface MovieCardProps {
   movie: MovieData;
@@ -90,6 +90,24 @@ export function MovieCard({ movie }: MovieCardProps) {
               {movie.rated && movie.rated !== 'Not Rated' && (
                 <Badge variant="outline">{movie.rated}</Badge>
               )}
+              <Badge variant="outline" className="capitalize">{movie.type}</Badge>
+            </div>
+
+            <div className="flex flex-col gap-2 text-sm mt-3">
+              <div className="flex items-start gap-2">
+                <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-medium text-foreground">Director: </span>
+                  <span className="text-muted-foreground">{movie.director}</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Film className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-medium text-foreground">Genre: </span>
+                  <span className="text-muted-foreground">{movie.genre}</span>
+                </div>
+              </div>
             </div>
           </CardHeader>
 
