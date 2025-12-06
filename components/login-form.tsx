@@ -24,12 +24,13 @@ export function LoginForm() {
       const result = await signIn("credentials", {
         username,
         password,
+        callbackUrl: "/",
         redirect: false,
       });
 
       if (result?.error) {
         setError("Invalid username or password");
-      } else {
+      } else if (result?.ok) {
         window.location.href = "/";
       }
     } catch (error) {
