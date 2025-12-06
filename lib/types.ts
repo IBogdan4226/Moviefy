@@ -33,16 +33,20 @@ export interface BatchPagesResult {
   error?: string;
 }
 
+export type SortOption = 'none' | 'year-asc' | 'year-desc' | 'rating-asc' | 'rating-desc';
+
 export interface SearchFilters {
   year?: string;
   genre?: string;
   scoreRange?: [number, number];
+  sort?: SortOption;
 }
 
 export interface FilterState {
   year: string;
   genre: string;
   scoreRange: [number, number];
+  sort: SortOption;
 }
 
 // OMDb API response types

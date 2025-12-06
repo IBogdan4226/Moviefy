@@ -38,6 +38,7 @@ export function MovieFilters({
       year: "",
       genre: "all",
       scoreRange: [0, 10],
+      sort: 'none',
     });
   };
 
@@ -82,6 +83,22 @@ export function MovieFilters({
           step={0.1}
           className="mt-2"
         />
+      </div>
+
+      <div className="space-y-2 md:col-span-3">
+        <label className="text-sm font-medium">Sort By</label>
+        <Select value={filters.sort} onValueChange={(sort) => setFilters({ ...filters, sort: sort as any })}>
+          <SelectTrigger className="w-full md:w-64">
+            <SelectValue placeholder="No sorting" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No Sorting</SelectItem>
+            <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
+            <SelectItem value="year-desc">Year (Newest First)</SelectItem>
+            <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
+            <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="md:col-span-3 flex justify-end gap-2">

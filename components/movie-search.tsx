@@ -16,6 +16,7 @@ const buildFilters = (filters: FilterState): SearchFilters => ({
     filters.scoreRange[0] !== 0 || filters.scoreRange[1] !== 10
       ? filters.scoreRange
       : undefined,
+  sort: filters.sort !== 'none' ? filters.sort : undefined,
 });
 
 export function MovieSearch() {
@@ -32,6 +33,7 @@ export function MovieSearch() {
     year: "",
     genre: "all",
     scoreRange: [0, 10],
+    sort: 'none',
   });
   const [showFilters, setShowFilters] = useState(false);
 

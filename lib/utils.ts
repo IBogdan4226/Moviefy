@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { SearchFilters, MovieData } from "./types";
+import { SearchFilters, MovieData, SortOption } from "./types";
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -31,6 +31,35 @@ export function createScoreFilter(scoreRange?: [number, number]): FilterFunction
   };
 }
 
+export function createSortFilter(sort?: SortOption): FilterFunction {
+  if (!sort || sort === 'none') return (movies) => movies;
+  
+  return (movies: MovieData[]) => {
+    const sorted = [...movies];
+    
+    switch (sort) {
+      case 'year-asc':
+        return sorted.sort((a, b) => {
+          const yearA = parseInt(a.year) || 0;
+          const yearB = parseInt(b.year) || 0;
+          return yearA - yearB;
+        });
+      case 'year-desc':
+        return sorted.sort((a, b) => {
+          const yearA = parseInt(a.year) || 0;
+          const yearB = parseInt(b.year) || 0;
+          return yearB - yearA;
+        });
+      case 'rating-asc':
+        return sorted.sort((a, b) => a.rating - b.rating);
+      case 'rating-desc':
+        return sorted.sort((a, b) => b.rating - a.rating);
+      default:
+        return sorted;
+    }
+  };
+}
+
 export function chainFilters(...filters: FilterFunction[]): FilterFunction {
   return (movies: MovieData[]) => {
     return filters.reduce((filteredMovies, filter) => filter(filteredMovies), movies);
@@ -41,6 +70,7 @@ export function createFilterChain(filters?: SearchFilters): FilterFunction {
   if (!filters) return (movies) => movies;
   return chainFilters(
     createGenreFilter(filters.genre),
-    createScoreFilter(filters.scoreRange)
+    createScoreFilter(filters.scoreRange),
+    createSortFilter(filters.sort)
   );
 }
