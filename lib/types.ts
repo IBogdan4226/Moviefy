@@ -19,6 +19,32 @@ export interface MovieSearchResult {
   totalResults?: number;
 }
 
+export interface FirstPageResult {
+  success: boolean;
+  data?: MovieData[];
+  error?: string;
+  totalPages: number;
+  totalResults: number;
+}
+
+export interface BatchPagesResult {
+  success: boolean;
+  data?: MovieData[];
+  error?: string;
+}
+
+export interface SearchFilters {
+  year?: string;
+  genre?: string;
+  scoreRange?: [number, number];
+}
+
+export interface FilterState {
+  year: string;
+  genre: string;
+  scoreRange: [number, number];
+}
+
 // OMDb API response types
 export interface OMDbSearchMovie {
   Title: string;

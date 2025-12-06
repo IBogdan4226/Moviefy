@@ -1,94 +1,127 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { Search, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { searchMovie } from '@/lib/actions';
-import { MovieData } from '@/lib/types';
-import { MovieCard } from '@/components/movie-card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState, useRef } from "react";
+import { fetchFirstPage, fetchBatchPages } from "@/lib/actions";
+import { MovieData, SearchFilters, FilterState } from "@/lib/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SearchBar } from "@/components/search-bar";
+import { MovieFilters } from "@/components/movie-filters";
+import { MovieList } from "@/components/movie-list";
+import { ITEMS_PER_PAGE } from "@/lib/utils";
+
+const buildFilters = (filters: FilterState): SearchFilters => ({
+  year: filters.year,
+  genre: filters.genre !== "all" ? filters.genre : undefined,
+  scoreRange:
+    filters.scoreRange[0] !== 0 || filters.scoreRange[1] !== 10
+      ? filters.scoreRange
+      : undefined,
+});
 
 export function MovieSearch() {
-  const [movieName, setMovieName] = useState('');
-  const [searchedMovieName, setSearchedMovieName] = useState('');
-  const [moviesData, setMoviesData] = useState<MovieData[]>([]);
+  const [movieName, setMovieName] = useState("");
+  const [displayedMovies, setDisplayedMovies] = useState<MovieData[]>([]);
+  const [allFetchedMovies, setAllFetchedMovies] = useState<MovieData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [totalResults, setTotalResults] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const isFetchingBatch = useRef(false);
+
+  const [filters, setFilters] = useState<FilterState>({
+    year: "",
+    genre: "all",
+    scoreRange: [0, 10],
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setMoviesData([]);
+    setDisplayedMovies([]);
+    setAllFetchedMovies([]);
     setIsLoading(true);
-    setSearchedMovieName(movieName);
-    setCurrentPage(1);
+    isFetchingBatch.current = false;
 
     try {
-      const result = await searchMovie(movieName, 1);
+      const searchFilters = buildFilters(filters);
+      const firstPageResult = await fetchFirstPage(movieName, searchFilters);
 
-      console.log(result);
-      if (result.success && result.data) {
-        setMoviesData(result.data);
-        setTotalResults(result.totalResults || 0);
-        setHasMore((result.totalResults || 0) > result.data.length);
+      if (firstPageResult.success && firstPageResult.data) {
+        setDisplayedMovies(firstPageResult.data.slice(0, 10));
+        setAllFetchedMovies(firstPageResult.data);
+        setTotalResults(firstPageResult.totalResults);
+        setTotalPages(firstPageResult.totalPages);
+
+        if (
+          firstPageResult.totalPages > 1 &&
+          firstPageResult.totalResults > firstPageResult.data.length
+        ) {
+          fetchRemainingPagesInBackground(
+            movieName,
+            firstPageResult.totalPages,
+            searchFilters
+          );
+        }
       } else {
-        setError(result.error || 'An error occurred while searching');
+        setError(firstPageResult.error || "An error occurred while searching");
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Search error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchMoreMovies = async () => {
-    if (!searchedMovieName) return;
-
-    const nextPage = currentPage + 1;
+  const fetchRemainingPagesInBackground = async (
+    searchTerm: string,
+    totalPagesCount: number,
+    filters: SearchFilters
+  ) => {
+    if (isFetchingBatch.current) return;
+    isFetchingBatch.current = true;
 
     try {
-      const result = await searchMovie(searchedMovieName, nextPage);
+      const endPage = Math.min(totalPagesCount, 20);
+      const batchResult = await fetchBatchPages(searchTerm, endPage, filters);
 
-      if (result.success && result.data) {
-        setMoviesData(prev => [...prev, ...result.data!]);
-        setCurrentPage(nextPage);
-        setHasMore((result.totalResults || 0) > moviesData.length + result.data.length);
+      if (batchResult.success && batchResult.data) {
+        setAllFetchedMovies(batchResult.data);
       }
     } catch (err) {
-      console.error('Error loading more movies:', err);
+      console.error("Error fetching remaining pages:", err);
     }
   };
 
+  const loadMoreMovies = () => {
+    setTimeout(() => {
+      setDisplayedMovies(
+        allFetchedMovies.slice(0, displayedMovies.length + ITEMS_PER_PAGE)
+      );
+    }, 300);
+  };
+
+  const hasMore = displayedMovies.length < allFetchedMovies.length;
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8">
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="Enter a movie name..."
-          value={movieName}
-          onChange={(e) => setMovieName(e.target.value)}
-          disabled={isLoading}
-          className="text-lg h-12"
+      <div className="space-y-4">
+        <SearchBar
+          movieName={movieName}
+          onMovieNameChange={setMovieName}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+          onToggleFilters={() => setShowFilters(!showFilters)}
         />
-        <Button type="submit" disabled={isLoading} size="lg" className="px-8">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Searching
-            </>
-          ) : (
-            <>
-              <Search className="mr-2 h-4 w-4" />
-              Search
-            </>
-          )}
-        </Button>
-      </form>
+
+        {showFilters && (
+          <MovieFilters
+            filters={filters}
+            setFilters={setFilters}
+          />
+        )}
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -96,38 +129,14 @@ export function MovieSearch() {
         </Alert>
       )}
 
-      {moviesData.length > 0 && (
-        <div className="text-center text-muted-foreground">
-          Found {totalResults} result{totalResults !== 1 ? 's' : ''} for "{searchedMovieName}" (showing {moviesData.length})
-        </div>
-      )}
-
-      {moviesData.length > 0 && (
-        <InfiniteScroll
-          dataLength={moviesData.length}
-          next={fetchMoreMovies}
-          hasMore={hasMore}
-          loader={
-            <div className="flex justify-center py-8">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Loading more movies...</span>
-              </div>
-            </div>
-          }
-          endMessage={
-            <p className="text-center py-8 text-muted-foreground">
-              No more results to load
-            </p>
-          }
-        >
-          <div className="flex flex-col gap-6">
-            {moviesData.map((movie) => (
-              <MovieCard key={movie.imdbID} movie={movie} />
-            ))}
-          </div>
-        </InfiniteScroll>
-      )}
+      <MovieList
+        displayedMovies={displayedMovies}
+        hasMore={hasMore}
+        onLoadMore={loadMoreMovies}
+        totalMovies={allFetchedMovies.length}
+        totalResults={totalResults}
+        totalPages={totalPages}
+      />
     </div>
   );
 }
