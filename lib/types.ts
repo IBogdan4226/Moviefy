@@ -49,8 +49,6 @@ export interface FilterState {
   sort: SortOption;
 }
 
-
-// OMDb API response types
 export interface OMDbSearchMovie {
   Title: string;
   Year: string;

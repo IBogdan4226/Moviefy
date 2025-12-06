@@ -47,7 +47,6 @@ export function MovieList({
   const scrollNext = useCallback(() => {
     if (emblaApi) {
       emblaApi.scrollNext();
-      // Load more when approaching the end
       if (
         hasMore &&
         emblaApi.selectedScrollSnap() >= displayedMovies.length - 3
