@@ -11,6 +11,9 @@ import {
 } from "./types";
 import { createFilterChain, getUniqueMovies } from "./utils";
 import { redisCache } from "./redisCache";
+import { userStore } from "./redisUser";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./auth-options";
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
 const OMDB_BASE_URL = "https://www.omdbapi.com";
@@ -229,5 +232,59 @@ export async function fetchBatchPages(
           ? error.message
           : "An unexpected error occurred.",
     };
+  }
+}
+
+export async function toggleWatchlist(imdbID: string): Promise<{ success: boolean; isInWatchlist: boolean; error?: string }> {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return { success: false, isInWatchlist: false, error: "Not authenticated" };
+    }
+
+    const user = await userStore.getUserById(session.user.id);
+    
+    if (!user) {
+      return { success: false, isInWatchlist: false, error: "User not found" };
+    }
+
+    const watchlist = user.watchlist || [];
+    const isInWatchlist = watchlist.includes(imdbID);
+
+    if (isInWatchlist) {
+      user.watchlist = watchlist.filter(id => id !== imdbID);
+    } else {
+      user.watchlist = [...watchlist, imdbID];
+    }
+
+    await userStore.updateUser(user);
+
+    return { success: true, isInWatchlist: !isInWatchlist };
+  } catch (error) {
+    console.error("Error toggling watchlist:", error);
+    return { success: false, isInWatchlist: false, error: "Failed to update watchlist" };
+  }
+}
+
+export async function getWatchlistStatus(imdbID: string): Promise<{ isInWatchlist: boolean }> {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return { isInWatchlist: false };
+    }
+
+    const user = await userStore.getUserById(session.user.id);
+    
+    if (!user) {
+      return { isInWatchlist: false };
+    }
+
+    const watchlist = user.watchlist || [];
+    return { isInWatchlist: watchlist.includes(imdbID) };
+  } catch (error) {
+    console.error("Error getting watchlist status:", error);
+    return { isInWatchlist: false };
   }
 }

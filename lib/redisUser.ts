@@ -35,6 +35,16 @@ class UserStore {
     }
   }
 
+  async updateUser(user: User): Promise<void> {
+    try {
+      await connectRedis();
+      await redisClient.set(`${this.USER_PREFIX}${user.id}`, JSON.stringify(user));
+    } catch (error) {
+      console.error("Redis updateUser error:", error);
+      throw error;
+    }
+  }
+
   async getUserByUsername(username: string): Promise<User | null> {
     try {
       await connectRedis();
