@@ -2,7 +2,6 @@
 
 import axios from "axios";
 import {
-  MovieSearchResult,
   OMDbSearchResponse,
   OMDbMovieDetails,
   MovieData,
@@ -11,21 +10,14 @@ import {
   SearchFilters,
 } from "./types";
 import { createFilterChain } from "./utils";
+import { searchCache } from "./redis";
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
 const OMDB_BASE_URL = "https://www.omdbapi.com";
 
-interface CacheEntry {
-  movies: MovieData[];
-  timestamp: number;
-  totalResults: number;
-}
-
-const searchCache = new Map<string, CacheEntry>();
-const CACHE_DURATION = 1000 * 60 * 30;
-
-function getCacheKey(movieName: string, year?: string): string {
-  return `${movieName.toLowerCase().trim()}${year ? `_${year}` : ""}`;
+function getCacheKey(movieName: string, filters?: SearchFilters): string {
+  const name = movieName.toLowerCase().trim();
+  return filters?.year ? `${name}|year:${filters.year}` : name;
 }
 
 async function fetchMovieDetails(imdbID: string): Promise<MovieData | null> {
@@ -67,7 +59,6 @@ async function fetchSearchPage(
     const url = `${OMDB_BASE_URL}/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(
       movieName
     )}&page=${page}${year ? `&y=${year}` : ""}`;
-    console.log("da",url)
     const response = await axios.get<OMDbSearchResponse>(url);
     return response.data;
   } catch (error) {
@@ -98,10 +89,9 @@ export async function fetchFirstPage(
     };
   }
   try {
-    const cacheKey = getCacheKey(movieName, filters?.year);
-    const cached = searchCache.get(cacheKey);
-    console.log("cache",cached)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    const cacheKey = getCacheKey(movieName, filters);
+    const cached = await searchCache.get(cacheKey);
+    if (cached) {
       const filterChain = createFilterChain(filters);
       const filteredMovies = filterChain(cached.movies);
       const totalPages = Math.min(Math.ceil(filteredMovies.length / 10), 20);
@@ -131,10 +121,8 @@ export async function fetchFirstPage(
       (movie): movie is MovieData => movie !== null
     );
     if (totalPages === 1) {
-      searchCache.set(cacheKey, {
+      await searchCache.set(cacheKey, {
         movies: validMovies,
-        timestamp: Date.now(),
-        totalResults: totalResults,
       });
     }
     const filterChain = createFilterChain(filters);
@@ -186,7 +174,7 @@ export async function fetchBatchPages(
   }
 
   try {
-    const cacheKey = getCacheKey(movieName, filters?.year);
+    const cacheKey = getCacheKey(movieName, filters);
     const pageNumbers = Array.from({ length: endPage }, (_, i) => i + 1);
     const pagesDataPromises = pageNumbers.map((pageNum) =>
       fetchSearchPage(movieName, pageNum, filters?.year)
@@ -212,10 +200,8 @@ export async function fetchBatchPages(
       (movie): movie is MovieData => movie !== null
     );
 
-    searchCache.set(cacheKey, {
+    await searchCache.set(cacheKey, {
       movies: validMovies,
-      timestamp: Date.now(),
-      totalResults: parseInt(pagesData[0]?.totalResults || "0"),
     });
 
     const filterChain = createFilterChain(filters);
