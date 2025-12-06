@@ -64,4 +64,4 @@ class RedisCache {
   }
 }
 
-export const searchCache = new RedisCache();
+export const redisCache = new RedisCache();

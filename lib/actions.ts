@@ -10,7 +10,7 @@ import {
   SearchFilters,
 } from "./types";
 import { createFilterChain, getUniqueMovies } from "./utils";
-import { searchCache } from "./redis";
+import { redisCache } from "./redisCache";
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY;
 const OMDB_BASE_URL = "https://www.omdbapi.com";
@@ -93,7 +93,7 @@ export async function fetchFirstPage(
   }
   try {
     const cacheKey = getCacheKey(movieName, filters);
-    const cached = await searchCache.get(cacheKey);
+    const cached = await redisCache.get(cacheKey);
     if (cached) {
       const filterChain = createFilterChain(filters);
       const filteredMovies = filterChain(cached.movies);
@@ -124,7 +124,7 @@ export async function fetchFirstPage(
       (movie): movie is MovieData => movie !== null
     );
     if (totalPages === 1) {
-      await searchCache.set(cacheKey, {
+      await redisCache.set(cacheKey, {
         movies: validMovies,
       });
     }
@@ -210,7 +210,7 @@ export async function fetchBatchPages(
       (movie): movie is MovieData => movie !== null
     );
 
-    await searchCache.set(cacheKey, {
+    await redisCache.set(cacheKey, {
       movies: validMovies,
     });
 

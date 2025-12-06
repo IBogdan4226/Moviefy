@@ -49,6 +49,7 @@ export interface FilterState {
   sort: SortOption;
 }
 
+
 // OMDb API response types
 export interface OMDbSearchMovie {
   Title: string;
@@ -92,4 +93,11 @@ export interface OMDbMovieDetails {
   Website: string;
   Response: string;
   Error?: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  passwordHash: string;
+  createdAt: string;
 }
