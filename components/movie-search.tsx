@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ export function MovieSearch() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [totalResults, setTotalResults] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,14 +26,16 @@ export function MovieSearch() {
     setMoviesData([]);
     setIsLoading(true);
     setSearchedMovieName(movieName);
+    setCurrentPage(1);
 
     try {
-      const result = await searchMovie(movieName);
+      const result = await searchMovie(movieName, 1);
 
       console.log(result);
       if (result.success && result.data) {
         setMoviesData(result.data);
         setTotalResults(result.totalResults || 0);
+        setHasMore((result.totalResults || 0) > result.data.length);
       } else {
         setError(result.error || 'An error occurred while searching');
       }
@@ -38,6 +43,24 @@ export function MovieSearch() {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchMoreMovies = async () => {
+    if (!searchedMovieName) return;
+
+    const nextPage = currentPage + 1;
+
+    try {
+      const result = await searchMovie(searchedMovieName, nextPage);
+
+      if (result.success && result.data) {
+        setMoviesData(prev => [...prev, ...result.data!]);
+        setCurrentPage(nextPage);
+        setHasMore((result.totalResults || 0) > moviesData.length + result.data.length);
+      }
+    } catch (err) {
+      console.error('Error loading more movies:', err);
     }
   };
 
@@ -80,11 +103,30 @@ export function MovieSearch() {
       )}
 
       {moviesData.length > 0 && (
-        <div className="flex flex-col gap-6">
-          {moviesData.map((movie) => (
-            <MovieCard key={movie.imdbID} movie={movie} />
-          ))}
-        </div>
+        <InfiniteScroll
+          dataLength={moviesData.length}
+          next={fetchMoreMovies}
+          hasMore={hasMore}
+          loader={
+            <div className="flex justify-center py-8">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span>Loading more movies...</span>
+              </div>
+            </div>
+          }
+          endMessage={
+            <p className="text-center py-8 text-muted-foreground">
+              No more results to load
+            </p>
+          }
+        >
+          <div className="flex flex-col gap-6">
+            {moviesData.map((movie) => (
+              <MovieCard key={movie.imdbID} movie={movie} />
+            ))}
+          </div>
+        </InfiniteScroll>
       )}
     </div>
   );
