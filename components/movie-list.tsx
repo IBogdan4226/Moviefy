@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import useEmblaCarousel from 'embla-carousel-react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MovieData } from '@/lib/types';
-import { MovieCard } from '@/components/movie-card';
-import { Button } from '@/components/ui/button';
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MovieData } from "@/lib/types";
+import { MovieCard } from "@/components/movie-card";
+import { Button } from "@/components/ui/button";
+
+function getOrdinalSuffix(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
 
 interface MovieListProps {
   displayedMovies: MovieData[];
@@ -22,13 +28,13 @@ export function MovieList({
   onLoadMore,
   totalMovies,
   totalResults,
-  totalPages
+  totalPages,
 }: MovieListProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
-    align: 'center',
+    align: "center",
     skipSnaps: false,
-    containScroll: 'trimSnaps',
+    containScroll: "trimSnaps",
   });
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -42,7 +48,10 @@ export function MovieList({
     if (emblaApi) {
       emblaApi.scrollNext();
       // Load more when approaching the end
-      if (hasMore && emblaApi.selectedScrollSnap() >= displayedMovies.length - 3) {
+      if (
+        hasMore &&
+        emblaApi.selectedScrollSnap() >= displayedMovies.length - 3
+      ) {
         onLoadMore();
       }
     }
@@ -58,8 +67,8 @@ export function MovieList({
   useEffect(() => {
     if (!emblaApi) return;
     onSelect();
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
   }, [emblaApi, onSelect]);
 
   if (displayedMovies.length === 0) {
@@ -70,8 +79,8 @@ export function MovieList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {selectedIndex + 1} out of {displayedMovies.length} movies
-          {totalMovies < totalResults && ` (limited to ${totalPages} pages)`}
+          Showing the
+          {` ${selectedIndex + 1}${getOrdinalSuffix(selectedIndex + 1)}`} result
         </p>
         <div className="flex gap-2">
           <Button

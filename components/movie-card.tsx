@@ -6,7 +6,8 @@ import { MovieData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Star, Clock, Calendar, AlertCircle, CheckCircle, XCircle, Film, User } from 'lucide-react';
+import { Star, Clock, Calendar, AlertCircle, CheckCircle, XCircle, Film, User, Facebook, Share2, Twitter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MovieCardProps {
   movie: MovieData;
@@ -16,6 +17,25 @@ export function MovieCard({ movie }: MovieCardProps) {
   const rating = movie.rating;
   const ratingPercentage = (rating / 10) * 100;
   const [imageError, setImageError] = React.useState(false);
+
+  const imdbUrl = `https://www.imdb.com/title/${movie.imdbID}`;
+
+  const shareToFacebook = () => {
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(imdbUrl)}`;
+    window.open(facebookUrl, '_blank', 'width=600,height=400');
+  };
+
+  const shareToWhatsApp = () => {
+    const whatsappText = `Check out this movie: ${movie.title} - ${imdbUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const shareToTwitter = () => {
+    const twitterText = `Check out this movie: ${movie.title}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(imdbUrl)}`;
+    window.open(twitterUrl, '_blank');
+  };
 
   const getRecommendation = () => {
     if (isNaN(rating)) {
@@ -70,12 +90,43 @@ export function MovieCard({ movie }: MovieCardProps) {
           <CardHeader className="flex-shrink-0">
             <div className="flex items-start justify-between gap-4">
               <CardTitle className="text-2xl font-bold line-clamp-2">{movie.title}</CardTitle>
-              {!isNaN(rating) && rating > 0 && (
-                <Badge variant="secondary" className="flex items-center gap-1 text-lg px-3 py-1 flex-shrink-0">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  {rating.toFixed(1)}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!isNaN(rating) && rating > 0 && (
+                  <Badge variant="secondary" className="flex items-center gap-1 text-lg px-3 py-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    {rating.toFixed(1)}
+                  </Badge>
+                )}
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={shareToFacebook}
+                    title="Share on Facebook"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={shareToTwitter}
+                    title="Share on Twitter/X"
+                  >
+                    <Twitter className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={shareToWhatsApp}
+                    title="Share on WhatsApp"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
