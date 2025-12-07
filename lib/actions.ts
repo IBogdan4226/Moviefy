@@ -122,7 +122,7 @@ export async function fetchFirstPage(
       };
     }
     const totalResults = parseInt(firstPageData.totalResults);
-    const totalPages = Math.min(Math.ceil(totalResults / 10), 5);
+    const totalPages = Math.min(Math.ceil(totalResults / 10), 20);
     const detailsPromises = firstPageData.Search.map((movie) =>
       fetchMovieDetails(movie.imdbID)
     );
