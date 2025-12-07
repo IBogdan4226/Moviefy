@@ -6,7 +6,6 @@ import { User, LogOut, Bookmark, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/lib/actions";
-import { redirect } from "next/navigation";
 
 let scoreCache: number | null = null;
 
@@ -34,7 +33,7 @@ export function AuthNav() {
     };
 
     window.addEventListener("watchlistChanged", handleScoreChange);
-
+    
     return () => {
       window.removeEventListener("watchlistChanged", handleScoreChange);
     };
@@ -68,10 +67,7 @@ export function AuthNav() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            signOut();
-            redirect("/");
-          }}
+          onClick={() => signOut()}
           className="flex items-center gap-2"
         >
           <LogOut className="h-4 w-4" />
