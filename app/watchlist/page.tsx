@@ -6,11 +6,11 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 export default async function WatchlistPage() {
-     const session = await getServerSession(authOptions);
-    
-      if (!session) {
-        redirect("/login");
-      }
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect("/login");
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <Nav />
