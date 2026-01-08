@@ -13,7 +13,7 @@ jest.mock("../lib/auth-options", () => ({
 }));
 
 describe("Redis Watchlist Operations", () => {
-  const testUserId = "test_user_mock_123";
+  const testUserId = "test_user_auth_mock_456";
   const testUsername = "mockuser";
   const testMovieId = "tt0110912";
 

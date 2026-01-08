@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { User } from "@/lib/types";
 
 describe("Authentication Credentials Verification", () => {
-  const testUsername = "mockuser_auth";
+  const testUsername = "mockuser";
   const testPassword = "1qaz2wsx";
   const testUserId = "test_user_auth_mock_456";
 
