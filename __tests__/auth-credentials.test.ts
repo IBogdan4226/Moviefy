@@ -2,11 +2,25 @@ require('dotenv').config();
 import { verifyCredentials } from "@/lib/auth";
 import { userStore } from "@/lib/redisUser";
 import bcrypt from "bcryptjs";
+import { User } from "@/lib/types";
 
 describe("Authentication Credentials Verification", () => {
-  const testUsername = "test1234";
+  const testUsername = "mockuser_auth";
   const testPassword = "1qaz2wsx";
-  const testUserId = "test-user-auth-id";
+  const testUserId = "test_user_auth_mock_456";
+
+  const createMockAuthUser = async (): Promise<User> => {
+    const passwordHash = await bcrypt.hash(testPassword, 10);
+    
+    return {
+      id: testUserId,
+      username: testUsername,
+      passwordHash: "hashedpassword",
+      createdAt: new Date().toISOString(),
+      watchlist: [],
+      score: 0,
+    };
+  };
 
   beforeAll(async () => {
     const passwordHash = await bcrypt.hash(testPassword, 10);
