@@ -2,6 +2,7 @@ require('dotenv').config();
 import { userStore } from "@/lib/redisUser";
 import { toggleWatchlist, getWatchlistStatus } from "@/lib/actions";
 import { getServerSession } from "next-auth";
+import { User } from "@/lib/types";
 
 jest.mock("next-auth", () => ({
   getServerSession: jest.fn(),
@@ -12,9 +13,18 @@ jest.mock("../lib/auth-options", () => ({
 }));
 
 describe("Redis Watchlist Operations", () => {
-  const testUserId = "user_1767870191095_2fkeu96";
-  const testUsername = "test1234";
+  const testUserId = "test_user_auth_mock_456";
+  const testUsername = "mockuser";
   const testMovieId = "tt0110912";
+
+  const createMockUser = (): User => ({
+    id: testUserId,
+    username: testUsername,
+    passwordHash: "hashedpassword",
+    createdAt: new Date().toISOString(),
+    watchlist: [],
+    score: 0,
+  });
 
   beforeEach(() => {
     (getServerSession as jest.Mock).mockResolvedValue({
